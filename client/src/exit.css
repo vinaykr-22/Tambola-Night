@@ -1,0 +1,17 @@
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.exit-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e75d4088;
+  background: #e75d401c;
+  color: #ffb09b;
+  border-radius: 9px;
+  padding: 8px 11px;
+  font-size: .72rem;
+}
