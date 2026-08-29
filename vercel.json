@@ -1,5 +1,6 @@
 {
-  "buildCommand": "npm run build -w client",
+  "installCommand": "npm install",
+  "buildCommand": "npm --prefix shared run build && npm --prefix client run build",
   "outputDirectory": "client/dist",
   "framework": "vite"
 }
