@@ -1,5 +1,5 @@
 import cors from "cors"; import express from "express"; import { createServer } from "node:http"; import { Server, Socket } from "socket.io"; import type { CallingMode, WinningCondition } from "@tambola/shared"; import { RoomManager } from "./rooms/RoomManager.js";
-const allowedOrigins = process.env.CLIENT_ORIGIN?.split(",").map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = process.env.CLIENT_ORIGIN?.split(",").map((origin) => origin.trim().replace(/\/$/, "")).filter(Boolean);
 const corsOrigin = allowedOrigins?.length ? allowedOrigins : true;
 const app = express(); app.use(cors({ origin: corsOrigin })); app.get("/health", (_, res) => res.json({ ok: true, uptime: process.uptime() }));
 const httpServer = createServer(app), io = new Server(httpServer, { cors: { origin: corsOrigin } }), rooms = new RoomManager();
