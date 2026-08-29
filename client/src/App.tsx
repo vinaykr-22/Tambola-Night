@@ -4,7 +4,8 @@ import { Crown, Dices, LogIn, Play, Trophy, Users } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { CONDITION_LABELS, RoomState, WinningCondition, Winner } from "@tambola/shared";
 
-const socket: Socket = io(import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001", { autoConnect: true });
+const fallbackServerUrl = `${window.location.protocol}//${window.location.hostname}:3001`;
+const socket: Socket = io(import.meta.env.VITE_SERVER_URL ?? fallbackServerUrl, { autoConnect: true });
 const defaultConditions: WinningCondition[] = ["earlyFive", "topLine", "middleLine", "bottomLine", "fourCorners", "fullHouse"];
 type View = "home" | "create" | "join" | "room";
 

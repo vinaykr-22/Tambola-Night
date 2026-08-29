@@ -59,6 +59,13 @@ cd D:\tambola-night
 npm install
 ```
 
+Copy the example environment files if you want explicit local config:
+
+```bash
+copy client\.env.example client\.env
+copy server\.env.example server\.env
+```
+
 ### Run
 
 ```bash
@@ -78,6 +85,90 @@ For phone testing on the same Wi-Fi network, use the Vite Network URL shown in t
 npm run dev
 npm run build
 npm test
+```
+
+## Deployment
+
+This project is prepared for a split deployment:
+
+- Frontend on Vercel
+- Backend on Render or Railway
+
+### Backend
+
+The server is production-ready with:
+
+- `PORT` support from the hosting platform
+- `/health` endpoint for uptime checks
+- configurable `CLIENT_ORIGIN`
+- Socket.IO CORS controlled through environment variables
+
+Environment variables for the server:
+
+```bash
+PORT=3001
+CLIENT_ORIGIN=https://your-frontend-domain.vercel.app
+```
+
+You can deploy the backend from the repo root with:
+
+- Build command: `npm install && npm run build`
+- Start command: `npm run start -w server`
+
+A starter [render.yaml](D:\tambola-night\render.yaml) is included for Render.
+
+Render quick setup:
+
+1. Create a new `Web Service` from this Git repo.
+2. Let Render detect the included `render.yaml`, or set the build and start commands manually.
+3. Add `CLIENT_ORIGIN` with your Vercel frontend URL.
+4. Deploy and confirm `https://your-service.onrender.com/health` returns `ok: true`.
+
+### Frontend
+
+The frontend build is production-ready and expects the backend URL through:
+
+```bash
+VITE_SERVER_URL=https://your-backend-domain.onrender.com
+```
+
+If `VITE_SERVER_URL` is not set, the client falls back to `window.location.hostname` on port `3001`, which is useful for local development on the same machine or LAN.
+
+For Vercel:
+
+- Framework preset: `Vite`
+- Build command: `npm run build -w client`
+- Output directory: `client/dist`
+- Environment variable: `VITE_SERVER_URL`
+
+A starter [vercel.json](D:\tambola-night\vercel.json) is included for root-level deployment.
+
+Vercel quick setup:
+
+1. Import the same Git repo into Vercel.
+2. Keep the root directory as the repo root.
+3. Add `VITE_SERVER_URL` with your Render backend URL.
+4. Deploy once, copy the Vercel domain, then place that domain into Render's `CLIENT_ORIGIN`.
+5. Redeploy the backend if needed so Socket.IO CORS uses the updated frontend origin.
+
+### Recommended Deploy Order
+
+1. Deploy the backend first and copy its public URL.
+2. Set `VITE_SERVER_URL` in the frontend host.
+3. Deploy the frontend.
+4. Set `CLIENT_ORIGIN` on the backend to the frontend URL.
+5. Redeploy the backend if your host does not apply env changes automatically.
+
+## First Push
+
+If this repo is not connected to GitHub yet, these are the usual commands from `D:\tambola-night`:
+
+```bash
+git add .
+git commit -m "Prepare Tambola Night for deployment"
+git branch -M main
+git remote add origin https://github.com/YOUR-USER/YOUR-REPO.git
+git push -u origin main
 ```
 
 ## Why This Setup

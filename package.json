@@ -2,6 +2,9 @@
   "name": "tambola-night",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": ["client", "server", "shared"],
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: tambola-night-server
+    runtime: node
+    rootDir: .
+    buildCommand: npm install && npm run build
+    startCommand: npm run start -w server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: CLIENT_ORIGIN
+        sync: false
