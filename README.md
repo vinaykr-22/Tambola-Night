@@ -137,7 +137,8 @@ If `VITE_SERVER_URL` is not set, the client falls back to `window.location.hostn
 For Vercel:
 
 - Framework preset: `Vite`
-- Build command: `npm run build -w client`
+- Install command: `npm install`
+- Build command: `npm --prefix shared run build && npm --prefix client run build`
 - Output directory: `client/dist`
 - Environment variable: `VITE_SERVER_URL`
 
