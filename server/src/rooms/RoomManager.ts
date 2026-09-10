@@ -93,7 +93,7 @@ export class RoomManager {
     const room = session && this.rooms.get(session.roomId);
     if (!room || !session) throw new Error("We could not resume that player. Join the room again.");
     const player = room.players.find((item) => item.id === session.playerId);
-    if (!player || player.connected) throw new Error("This player session is already active.");
+    if (!player) throw new Error("We could not resume that player. Join the room again.");
     const previousId = player.id;
     player.id = playerId;
     player.connected = true;

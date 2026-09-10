@@ -71,9 +71,29 @@ interface BogusAlert {
 }
 
 export default function App() {
-  const [view, setView] = useState<View>("home");
+  const [view, setView] = useState<View>(() => {
+    const saved = localStorage.getItem("tambola-session");
+    if (saved) {
+      try {
+        const session = JSON.parse(saved);
+        if (session.roomId && session.resumeToken) return "room";
+      } catch {
+        localStorage.removeItem("tambola-session");
+      }
+    }
+    return "home";
+  });
   const [room, setRoom] = useState<RoomState | null>(null);
-  const [roomCode, setRoomCode] = useState("");
+  const [roomCode, setRoomCode] = useState(() => {
+    const saved = localStorage.getItem("tambola-session");
+    if (saved) {
+      try {
+        const session = JSON.parse(saved);
+        if (session.roomId) return session.roomId;
+      } catch {}
+    }
+    return "";
+  });
   const [message, setMessage] = useState("");
   const [winner, setWinner] = useState<Winner | null>(null);
   const [bogus, setBogus] = useState<BogusAlert | null>(null);
@@ -109,7 +129,7 @@ export default function App() {
       if (saved) {
         try {
           const session = JSON.parse(saved);
-          if (session.roomId) {
+          if (session.roomId && session.resumeToken) {
             socket.emit("room:reconnect", { resumeToken: session.resumeToken });
           }
         } catch {
@@ -122,6 +142,21 @@ export default function App() {
       setRoom(nextRoom);
       setRoomCode(nextRoom.id);
       setView("room");
+    };
+
+    const onError = (errMsg: string) => {
+      setMessage(errMsg);
+      if (
+        errMsg.includes("could not resume") ||
+        errMsg.includes("Join the room again") ||
+        errMsg.includes("Room not found") ||
+        errMsg.includes("expired")
+      ) {
+        localStorage.removeItem("tambola-session");
+        setRoom(null);
+        setRoomCode("");
+        setView("home");
+      }
     };
 
     const onBogus = (data: BogusAlert) => {
@@ -148,12 +183,13 @@ export default function App() {
       setRoomCode(id);
       setView("room");
     });
-    socket.on("app:error", setMessage);
+    socket.on("app:error", onError);
     socket.on("claim:success", setWinner);
     socket.on("claim:bogus", onBogus);
     socket.on("room:reaction", onReaction);
 
     if (socket.connected) resume();
+    else socket.connect();
 
     return () => {
       socket.off("connect", resume);

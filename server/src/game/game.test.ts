@@ -55,4 +55,16 @@ test("room manager generates multiple tickets per player when requested", async 
   assert.equal(room.players[1].tickets.length, 2);
 });
 
+test("room manager allows reconnecting when player is still marked connected (browser refresh)", async () => {
+  const { RoomManager } = await import("../rooms/RoomManager.js");
+  const mgr = new RoomManager();
+  const room = mgr.create("host1", "tok1", "Host", "Game 1", ["fullHouse"], false);
+  assert.equal(room.players[0].connected, true);
+  const reconnected = mgr.reconnect("host1_new", "tok1");
+  assert.equal(reconnected.players[0].id, "host1_new");
+  assert.equal(reconnected.hostId, "host1_new");
+  assert.equal(reconnected.players[0].connected, true);
+});
+
+
 
