@@ -29,6 +29,7 @@ import {
   Winner,
   TAMBOLA_NICKNAMES,
 } from "@tambola/shared";
+import { fireConfetti, startVictoryConfetti, stopVictoryConfetti } from "./confetti";
 import "./exit.css";
 
 const fallbackServerUrl = `${window.location.protocol}//${window.location.hostname}:3001`;
@@ -184,7 +185,10 @@ export default function App() {
       setView("room");
     });
     socket.on("app:error", onError);
-    socket.on("claim:success", setWinner);
+    socket.on("claim:success", (win: Winner) => {
+      setWinner(win);
+      fireConfetti({ count: 80, spread: 85 });
+    });
     socket.on("claim:bogus", onBogus);
     socket.on("room:reaction", onReaction);
 
@@ -224,67 +228,103 @@ export default function App() {
     });
   };
 
-  if (view === "home") {
-    return <Home onCreate={() => setView("create")} onJoin={() => setView("join")} />;
-  }
-
-  if (view === "create") {
-    return (
-      <Create
-        onBack={() => setView("home")}
-        onSubmit={(payload) => {
-          const resumeToken = crypto.randomUUID();
-          localStorage.setItem(
-            "tambola-session",
-            JSON.stringify({ roomId: "", nickname: payload.nickname, resumeToken })
-          );
-          socket.connect();
-          socket.emit("room:create", { ...payload, resumeToken });
-        }}
-      />
-    );
-  }
-
-  if (view === "join") {
-    return (
-      <Join
-        initialCode={roomCode}
-        onBack={() => setView("home")}
-        onSubmit={(payload) => {
-          const resumeToken = crypto.randomUUID();
-          localStorage.setItem(
-            "tambola-session",
-            JSON.stringify({
-              roomId: payload.roomId.toUpperCase(),
-              nickname: payload.nickname,
-              resumeToken,
-            })
-          );
-          socket.connect();
-          setRoomCode(payload.roomId.toUpperCase());
-          socket.emit("room:join", { ...payload, resumeToken });
-          setView("room");
-        }}
-      />
-    );
-  }
-
   return (
-    <RoomScreen
-      room={room}
-      roomCode={roomCode}
-      message={message}
-      clearMessage={() => setMessage("")}
-      winner={winner}
-      closeWinner={() => setWinner(null)}
-      bogus={bogus}
-      closeBogus={() => setBogus(null)}
-      reactions={reactions}
-      onSendReaction={sendReaction}
-      onExit={exitRoom}
-      speechEnabled={speechEnabled}
-      toggleSpeech={toggleSpeech}
-    />
+    <AnimatePresence mode="wait">
+      {view === "home" && (
+        <motion.div
+          key="home"
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -14 }}
+          transition={{ duration: 0.24, ease: "easeOut" }}
+          className="view-wrapper"
+        >
+          <Home onCreate={() => setView("create")} onJoin={() => setView("join")} />
+        </motion.div>
+      )}
+
+      {view === "create" && (
+        <motion.div
+          key="create"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.24, ease: "easeOut" }}
+          className="view-wrapper"
+        >
+          <Create
+            onBack={() => setView("home")}
+            onSubmit={(payload) => {
+              const resumeToken = crypto.randomUUID();
+              localStorage.setItem(
+                "tambola-session",
+                JSON.stringify({ roomId: "", nickname: payload.nickname, resumeToken })
+              );
+              socket.connect();
+              socket.emit("room:create", { ...payload, resumeToken });
+            }}
+          />
+        </motion.div>
+      )}
+
+      {view === "join" && (
+        <motion.div
+          key="join"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          transition={{ duration: 0.24, ease: "easeOut" }}
+          className="view-wrapper"
+        >
+          <Join
+            initialCode={roomCode}
+            onBack={() => setView("home")}
+            onSubmit={(payload) => {
+              const resumeToken = crypto.randomUUID();
+              localStorage.setItem(
+                "tambola-session",
+                JSON.stringify({
+                  roomId: payload.roomId.toUpperCase(),
+                  nickname: payload.nickname,
+                  resumeToken,
+                })
+              );
+              socket.connect();
+              setRoomCode(payload.roomId.toUpperCase());
+              socket.emit("room:join", { ...payload, resumeToken });
+              setView("room");
+            }}
+          />
+        </motion.div>
+      )}
+
+      {view === "room" && (
+        <motion.div
+          key="room"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.24, ease: "easeOut" }}
+          className="view-wrapper"
+        >
+          <RoomScreen
+            room={room}
+            roomCode={roomCode}
+            message={message}
+            clearMessage={() => setMessage("")}
+            winner={winner}
+            closeWinner={() => setWinner(null)}
+            bogus={bogus}
+            closeBogus={() => setBogus(null)}
+            reactions={reactions}
+            onSendReaction={sendReaction}
+            onExit={exitRoom}
+            speechEnabled={speechEnabled}
+            toggleSpeech={toggleSpeech}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -293,7 +333,14 @@ function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }
     <main className="landing">
       <div className="orb orb-one" />
       <div className="orb orb-two" />
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="hero">
+      <div className="orb orb-three" />
+      <div className="orb orb-four" />
+      <motion.section
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+        className="hero"
+      >
         <p className="eyebrow">A private party game</p>
         <h1>
           Tambola
@@ -302,12 +349,22 @@ function Home({ onCreate, onJoin }: { onCreate: () => void; onJoin: () => void }
         </h1>
         <p className="lede">Your friends. Your tickets. Your lucky numbers.</p>
         <div className="actions">
-          <button className="primary" onClick={onCreate}>
+          <motion.button
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className="primary"
+            onClick={onCreate}
+          >
             <Dices /> Create game
-          </button>
-          <button className="secondary" onClick={onJoin}>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className="secondary"
+            onClick={onJoin}
+          >
             <LogIn /> Join with code
-          </button>
+          </motion.button>
         </div>
         <p className="mini">Built for phones, perfect for the living room.</p>
       </motion.section>
@@ -613,19 +670,31 @@ function RoomScreen({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={closeWinner}
           >
             <motion.section
               className="winner"
-              initial={{ scale: 0.8, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
+              initial={{ scale: 0.7, y: 25, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.75, y: 20, opacity: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 280 }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <Trophy />
-              <p className="eyebrow">Claim successful</p>
-              <h2>{winner.nickname}</h2>
-              <p>{CONDITION_LABELS[winner.condition]}</p>
-              <button className="primary" onClick={closeWinner}>
-                Keep playing
-              </button>
+              <div className="winner-sunburst" aria-hidden="true" />
+              <div className="winner-content">
+                <Trophy className="winner-trophy-anim" />
+                <p className="eyebrow">Claim successful</p>
+                <h2>{winner.nickname}</h2>
+                <p>{CONDITION_LABELS[winner.condition]}</p>
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="primary"
+                  onClick={closeWinner}
+                >
+                  Keep playing
+                </motion.button>
+              </div>
             </motion.section>
           </motion.div>
         )}
@@ -694,13 +763,25 @@ function Lobby({ room, host }: { room: RoomState; host: boolean }) {
         <small>Friends can join before you start.</small>
 
         <div className="lobby-share-actions">
-          <button className="share-btn" onClick={copyLink} title="Copy invite link">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="share-btn"
+            onClick={copyLink}
+            title="Copy invite link"
+          >
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? "Copied!" : "Copy Link"}
-          </button>
-          <button className="share-btn" onClick={openQr} title="Scan QR code">
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="share-btn"
+            onClick={openQr}
+            title="Scan QR code"
+          >
             <QrCode size={16} /> QR Code
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -740,23 +821,44 @@ function Lobby({ room, host }: { room: RoomState; host: boolean }) {
         <Users /> At the table
       </h3>
       <div className="player-list">
-        {room.players.map((player) => (
-          <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} key={player.id}>
-            <span>
-              {player.nickname}
-              {player.tickets && player.tickets.length > 1 && (
-                <span className="tickets-badge">{player.tickets.length} tickets</span>
+        <AnimatePresence>
+          {room.players.map((player) => (
+            <motion.div
+              layout
+              initial={{ opacity: 0, x: -16, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", damping: 20, stiffness: 260 }}
+              key={player.id}
+            >
+              <span>
+                {player.nickname}
+                {player.tickets && player.tickets.length > 1 && (
+                  <span className="tickets-badge">{player.tickets.length} tickets</span>
+                )}
+              </span>
+              {player.id === room.hostId && (
+                <motion.span
+                  animate={{ rotate: [-4, 4, -4] }}
+                  transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                >
+                  <Crown size={15} />
+                </motion.span>
               )}
-            </span>
-            {player.id === room.hostId && <Crown size={15} />}
-          </motion.div>
-        ))}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       {host ? (
-        <button className="primary start" onClick={() => socket.emit("game:start", room.id)}>
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          className="primary start"
+          onClick={() => socket.emit("game:start", room.id)}
+        >
           <Play /> Start game
-        </button>
+        </motion.button>
       ) : (
         <p className="waiting">
           Waiting for {room.players.find((p) => p.id === room.hostId)?.nickname} to start...
@@ -775,11 +877,19 @@ function Podium({
   host: boolean;
   onRematch: () => void;
 }) {
+  useEffect(() => {
+    startVictoryConfetti(6000);
+    return () => {
+      stopVictoryConfetti();
+    };
+  }, []);
+
   return (
     <section className="podium-card">
       <motion.div
-        initial={{ scale: 0.6, rotate: -10 }}
+        initial={{ scale: 0.5, rotate: -15 }}
         animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", damping: 12, stiffness: 200 }}
         className="podium-trophy"
       >
         <Trophy size={68} />
@@ -799,9 +909,9 @@ function Podium({
           room.winners.map((win, idx) => (
             <motion.div
               key={`${win.playerId}-${win.condition}-${idx}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              initial={{ opacity: 0, y: 14, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: idx * 0.12, type: "spring", damping: 16 }}
               className="podium-winner-row"
             >
               <div className="podium-condition">{CONDITION_LABELS[win.condition]}</div>
@@ -817,9 +927,14 @@ function Podium({
 
       <div className="podium-actions">
         {host ? (
-          <button className="primary rematch-btn" onClick={onRematch}>
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            className="primary rematch-btn"
+            onClick={onRematch}
+          >
             <RotateCcw size={18} /> Start Next Round
-          </button>
+          </motion.button>
         ) : (
           <p className="waiting">
             Waiting for {room.players.find((p) => p.id === room.hostId)?.nickname} to start the next
@@ -849,6 +964,32 @@ function Game({
   const [manualMarked, setManualMarked] = useState<Set<number>>(new Set());
   const [activeTicketIndex, setActiveTicketIndex] = useState(0);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [displayNumber, setDisplayNumber] = useState<number | null>(room.currentNumber);
+  const [isRolling, setIsRolling] = useState(false);
+  const [shockwaveKey, setShockwaveKey] = useState(0);
+
+  // Trigger rolling tumbler animation and shockwave whenever a new number is drawn
+  useEffect(() => {
+    if (!room.currentNumber) {
+      setDisplayNumber(null);
+      return;
+    }
+    if (room.currentNumber !== displayNumber) {
+      setIsRolling(true);
+      setShockwaveKey((k) => k + 1);
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        setDisplayNumber(Math.floor(Math.random() * 90) + 1);
+        if (count >= 5) {
+          clearInterval(interval);
+          setDisplayNumber(room.currentNumber);
+          setIsRolling(false);
+        }
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [room.currentNumber]);
 
   // Trigger 3s cooldown whenever a number is drawn
   useEffect(() => {
@@ -939,20 +1080,24 @@ function Game({
     <section className="game-grid">
       <div className="draw-card">
         <p className="eyebrow">Last number</p>
-        <motion.div
-          key={room.currentNumber}
-          initial={{ scale: 0.5, rotate: -15 }}
-          animate={{ scale: 1, rotate: 0 }}
-          className="ball"
-        >
-          {room.currentNumber ?? "?"}
-        </motion.div>
+        <div className="ball-wrap">
+          {room.currentNumber && <div key={shockwaveKey} className="ball-shockwave" />}
+          <motion.div
+            key={room.currentNumber ?? "empty"}
+            initial={{ scale: 0.35, rotate: -180, opacity: 0.6 }}
+            animate={{ scale: isRolling ? [1, 1.15, 1] : 1, rotate: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 14, stiffness: 220 }}
+            className="ball"
+          >
+            {displayNumber ?? "?"}
+          </motion.div>
+        </div>
 
         {currentNickname && (
           <motion.p
             key={`nickname-${room.currentNumber}`}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             className="ball-nickname"
           >
             “{currentNickname}”
@@ -969,7 +1114,9 @@ function Game({
         )}
 
         {canCall && (
-          <button
+          <motion.button
+            whileHover={cooldownRemaining === 0 ? { scale: 1.03 } : {}}
+            whileTap={cooldownRemaining === 0 ? { scale: 0.96 } : {}}
             className={`primary call-btn ${cooldownRemaining > 0 ? "cooldown" : ""}`}
             disabled={cooldownRemaining > 0}
             onClick={handleManualCall}
@@ -979,7 +1126,7 @@ function Game({
               : room.callingMode === "turns"
               ? "Draw your number"
               : "Call next number"}
-          </button>
+          </motion.button>
         )}
         {room.callingMode === "turns" && !canCall && (
           <p className="waiting">Waiting for {caller?.nickname ?? "the next player"}...</p>
@@ -1005,21 +1152,25 @@ function Game({
               </div>
               <div className="autocall-actions">
                 {room.autoCallInterval ? (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
                     className="autocall-btn stop"
                     onClick={() => socket.emit("game:stopAutoCall", room.id)}
                   >
                     <Pause size={15} /> Pause Auto-Draw
-                  </button>
+                  </motion.button>
                 ) : (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
                     className="autocall-btn start"
                     onClick={() =>
                       socket.emit("game:startAutoCall", { roomId: room.id, interval: autoSpeed })
                     }
                   >
                     <FastForward size={15} /> Start Auto-Draw ({autoSpeed}s)
-                  </button>
+                  </motion.button>
                 )}
               </div>
             </div>
@@ -1056,17 +1207,22 @@ function Game({
             <span className="recent-badge">Last 5</span>
           </div>
           <div className="recent-strip">
-            {recentCalls.map((number, idx) => (
-              <motion.div
-                key={number}
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className={`recent-ball ${idx === 0 ? "latest" : ""}`}
-              >
-                <span className="num">{number}</span>
-                {idx === 0 && <span className="tag">Now</span>}
-              </motion.div>
-            ))}
+            <AnimatePresence initial={false}>
+              {recentCalls.map((number, idx) => (
+                <motion.div
+                  layout
+                  key={number}
+                  initial={{ scale: 0.3, opacity: 0, x: -25 }}
+                  animate={{ scale: 1, opacity: 1, x: 0 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ type: "spring", damping: 18, stiffness: 260 }}
+                  className={`recent-ball ${idx === 0 ? "latest" : ""}`}
+                >
+                  <span className="num">{number}</span>
+                  {idx === 0 && <span className="tag">Now</span>}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       )}
@@ -1079,24 +1235,28 @@ function Game({
               {myTickets.length > 1 && (
                 <div className="ticket-tabs">
                   {myTickets.map((_, i) => (
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       key={i}
                       className={`ticket-tab ${activeTicketIndex === i ? "active" : ""}`}
                       onClick={() => setActiveTicketIndex(i)}
                     >
                       Ticket #{i + 1}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               )}
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               className={`daub-toggle ${manualDaub ? "active" : ""}`}
               onClick={() => setManualDaub((prev) => !prev)}
               title="Toggle Manual / Auto Daub"
             >
               {manualDaub ? "Tap to Mark ✍️" : "Auto-Mark 🪄"}
-            </button>
+            </motion.button>
           </div>
           <div className="ticket">
             {activeTicket.flatMap((row, r) =>
@@ -1105,7 +1265,8 @@ function Game({
                   ? number !== null && manualMarked.has(number)
                   : number !== null && called.has(number);
                 return (
-                  <button
+                  <motion.button
+                    whileTap={number !== null ? { scale: 0.92 } : {}}
                     key={`${r}-${c}`}
                     disabled={number === null}
                     onClick={() => handleCellClick(number)}
@@ -1114,7 +1275,7 @@ function Game({
                     }`}
                   >
                     {number ?? ""}
-                  </button>
+                  </motion.button>
                 );
               })
             )}
@@ -1134,14 +1295,16 @@ function Game({
               !room.winners.some((w) => w.condition === "fullHouse"));
 
           return (
-            <button
+            <motion.button
+              whileHover={isDisabled ? {} : { scale: 1.03 }}
+              whileTap={isDisabled ? {} : { scale: 0.96 }}
               key={condition}
               disabled={isDisabled}
               onClick={() => socket.emit("claim:submit", { roomId: room.id, condition })}
             >
               {CONDITION_LABELS[condition]}
               {isWon && <span>Won</span>}
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -1171,14 +1334,16 @@ function Game({
         <span>React:</span>
         <div className="reactions-buttons">
           {["🎉", "😱", "🔥", "🍻", "👑", "👀", "1 Away!"].map((emoji) => (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.25, rotate: -6 }}
+              whileTap={{ scale: 0.88 }}
               key={emoji}
               onClick={() => onSendReaction(emoji)}
               className="reaction-btn"
               title={`React with ${emoji}`}
             >
               {emoji}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
