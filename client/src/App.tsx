@@ -848,6 +848,27 @@ function Game({
   const [manualDaub, setManualDaub] = useState(false);
   const [manualMarked, setManualMarked] = useState<Set<number>>(new Set());
   const [activeTicketIndex, setActiveTicketIndex] = useState(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  // Trigger 3s cooldown whenever a number is drawn
+  useEffect(() => {
+    if (!room.currentNumber) return;
+    setCooldownRemaining(3);
+  }, [room.currentNumber]);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const timer = setTimeout(() => {
+      setCooldownRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [cooldownRemaining]);
+
+  const handleManualCall = () => {
+    if (cooldownRemaining > 0) return;
+    setCooldownRemaining(3);
+    socket.emit("game:callNext", room.id);
+  };
 
   const called = new Set(room.calledNumbers);
   const caller = room.players.find((player) => player.id === room.currentCallerId);
@@ -948,8 +969,16 @@ function Game({
         )}
 
         {canCall && (
-          <button className="primary" onClick={() => socket.emit("game:callNext", room.id)}>
-            {room.callingMode === "turns" ? "Draw your number" : "Call next number"}
+          <button
+            className={`primary call-btn ${cooldownRemaining > 0 ? "cooldown" : ""}`}
+            disabled={cooldownRemaining > 0}
+            onClick={handleManualCall}
+          >
+            {cooldownRemaining > 0
+              ? `Next in ${cooldownRemaining}s...`
+              : room.callingMode === "turns"
+              ? "Draw your number"
+              : "Call next number"}
           </button>
         )}
         {room.callingMode === "turns" && !canCall && (

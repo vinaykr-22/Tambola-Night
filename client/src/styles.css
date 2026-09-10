@@ -92,5 +92,18 @@
 .ticket-tab{background:#183127;border:1px solid #4f745e;color:#b9cfbc;padding:4px 10px;border-radius:8px;font-size:0.72rem;transition:all 0.15s ease}
 .ticket-tab.active{background:#efa844;color:#173127;border-color:#efa844;font-weight:bold}
 
+/* Call button cooldown & disabled state */
+.primary:disabled, .call-btn.cooldown{
+  background: #20352b !important;
+  color: #6a8877 !important;
+  border: 1px solid #365344 !important;
+  box-shadow: 0 4px 0 #15241d !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  filter: grayscale(0.6);
+  transition: all 0.2s ease;
+}
+
+
 
 
