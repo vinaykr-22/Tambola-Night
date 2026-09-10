@@ -3,11 +3,14 @@ export type Ticket = TicketCell[][];
 
 export type WinningCondition =
   | "earlyFive"
+  | "earlySeven"
   | "topLine"
   | "middleLine"
   | "bottomLine"
   | "fourCorners"
-  | "fullHouse";
+  | "star"
+  | "fullHouse"
+  | "secondFullHouse";
 
 export type GameStatus = "lobby" | "playing" | "paused" | "finished";
 export type CallingMode = "host" | "turns";
@@ -16,6 +19,7 @@ export interface Player {
   id: string;
   nickname: string;
   ticket: Ticket;
+  tickets: Ticket[];
   connected: boolean;
 }
 
@@ -38,13 +42,19 @@ export interface RoomState {
   winningConditions: WinningCondition[];
   winners: Winner[];
   allowMultipleWinners: boolean;
+  autoCallInterval: number | null;
 }
 
 export const CONDITION_LABELS: Record<WinningCondition, string> = {
   earlyFive: "Early Five",
+  earlySeven: "Early Seven",
   topLine: "Top Line",
   middleLine: "Middle Line",
   bottomLine: "Bottom Line",
   fourCorners: "Four Corners",
+  star: "Star Pattern",
   fullHouse: "Full House",
+  secondFullHouse: "2nd Full House",
 };
+
+export { TAMBOLA_NICKNAMES } from "./nicknames.js";
